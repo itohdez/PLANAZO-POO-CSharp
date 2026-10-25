@@ -234,19 +234,13 @@ classDiagram
 
 > **¿Por qué utilizaste una clase abstracta `Evento` en lugar de crear clases completamente independientes para Cine, Concierto y Taller? ¿Qué ventajas tiene esta decisión cuando necesitamos agregar un nuevo tipo de evento?**
 
-### Respuesta justificada con ejemplos del código
+### Respuesta justificada
 
-Utilizar una clase abstracta `Evento` en lugar de crear clases independientes para `Cine`, `Concierto` y `Taller` responde a tres razones arquitectónicas fundamentales de la Programación Orientada a Objetos:
+Utilicé una clase abstracta porque Cine, Concierto y Taller tienen casi todo en común: los tres tienen id, nombre, fecha, precio base, capacidad y cupos, y los tres reservan y liberan cupos de la misma manera. Si hubiera creado tres clases independientes, habría tenido que copiar ese código tres veces, y cualquier cambio (por ejemplo, una validación nueva en `ReservarCupos`) habría que repetirlo en cada una. Con `Evento` ese código está escrito una sola vez y los hijos lo reutilizan.
 
-1. **Eliminación de duplicación de código y centralización de reglas de negocio (Principio DRY):**  
-   Todos los eventos comparten estado (`Id`, `Nombre`, `Fecha`, `PrecioBase`, `CapacidadMaxima`, `CuposDisponibles`) y la misma lógica crítica de control de inventario (`DescontarCupos` y `DevolverCupos`). Si fueran clases independientes, habríamos tenido que programar y mantener las validaciones de cupos tres o cuatro veces por separado. En nuestro código (`Modelos/Evento.cs`), `DescontarCupos(int cantidad)` está escrito **una única vez** en `Evento` y todas las subclases lo heredan automáticamente.
-2. **Tratamiento uniforme en colecciones y asociaciones (Polimorfismo e Inversión de Dependencias):**  
-   Gracias a la clase abstracta `Evento`, el servicio `GestorReservas` almacena todos los eventos en una sola lista tipada como `private readonly List<Evento> _eventos;` y la clase `Reserva` se asocia únicamente con `public Evento EventoReservado { get; private set; }`. Si las clases fueran independientes, `Reserva` y `GestorReservas` tendrían que mantener listas separadas (`List<Cine>`, `List<Concierto>`, `List<Taller>`) y métodos sobrecargados para cada tipo de evento.
-3. **Ventaja al agregar un nuevo tipo de evento (Principio Abierto/Cerrado — Open/Closed Principle):**  
-   El sistema queda **abierto para su extensión, pero cerrado para su modificación**. Esto quedó demostrado al implementar el **Reto Adicional 1 (`Festival.cs`)**:
-   - Creamos `public class Festival : Evento` e implementamos su regla propia en `public override decimal CalcularPrecioFinal() => (PrecioBase * 1.20m) + 5000m;`.
-   - **No tuvimos que modificar ni una sola línea** de `Cine.cs`, `Concierto.cs`, `Taller.cs`, `Reserva.cs` ni de los métodos de reserva o cancelación en `GestorReservas.cs`.
-   - Cuando `Reserva` ejecuta `ValorTotal = eventoReservado.CalcularPrecioFinal() * cantidadEntradas;`, funciona de inmediato con instancias de `Festival` gracias al enlace dinámico (polimorfismo).
+Lo único que cambia entre los tipos es cómo se calcula el precio, y para eso `Evento` declara el método abstracto `CalcularPrecioFinal()`. Esto obliga a cada hijo a escribir su propia regla: en `Concierto` es `PrecioBase * (1 + Recargo)` y en `Taller` es `PrecioBase * (1 - Descuento)`. Gracias a esto, `Reserva` y `GestorReservas` solo trabajan con el tipo `Evento`: en `Reserva` la línea `evento.CalcularPrecioFinal() * cantidadEntradas` funciona igual sin importar si el evento es de cine, un concierto o un taller (polimorfismo), y todos caben en una sola `List<Evento>`.
+
+La ventaja principal se ve al agregar un tipo nuevo. Para el Reto 1 creé `Festival`: solo escribí `Festival.cs` heredando de `Evento` e implementando su `CalcularPrecioFinal()` (25 % de recargo más un cargo fijo), y lo registré con `gestor.RegistrarEvento(new Festival(...))` en `Program.cs`. **No tuve que modificar** `Reserva`, `GestorReservas`, `Cine`, `Concierto` ni `Taller`. Es decir, el sistema está abierto para crecer, pero cerrado para no romper lo que ya funciona. Con clases independientes habría tenido que tocar el gestor y la lista de eventos para cada tipo nuevo.
 
 ## 9. Evidencias y Casos de Prueba
 
