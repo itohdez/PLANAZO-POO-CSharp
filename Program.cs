@@ -98,6 +98,13 @@ namespace Planazo
         private static void ConsultarEvento(GestorReservas gestor)
         {
             EscribirTitulo("--- CONSULTAR EVENTO POR ID ---");
+            Console.WriteLine("Eventos registrados:");
+            foreach (var ev in gestor.ObtenerEventos())
+            {
+                Console.WriteLine($"  [{ev.Id}] {ev.Nombre} ({ev.TipoEvento})");
+            }
+            Console.WriteLine();
+
             Console.Write("Ingrese el ID del evento: ");
             if (!int.TryParse(Console.ReadLine(), out int idEvento))
                 throw new FormatException("El ID del evento debe ser un número entero válido.");
@@ -111,6 +118,13 @@ namespace Planazo
         private static void ReservarEntradas(GestorReservas gestor)
         {
             EscribirTitulo("--- RESERVAR ENTRADAS ---");
+            Console.WriteLine("Eventos disponibles para reservar:");
+            foreach (var ev in gestor.ObtenerEventos())
+            {
+                Console.WriteLine($"  [{ev.Id}] ({ev.TipoEvento}) {ev.Nombre} -> Precio Final: ${ev.CalcularPrecioFinal():N0} | Cupos disponibles: {ev.CuposDisponibles}/{ev.CapacidadMaxima}");
+            }
+            Console.WriteLine();
+
             Console.Write("Ingrese el documento del cliente: ");
             string documento = Console.ReadLine() ?? string.Empty;
 
@@ -150,6 +164,17 @@ namespace Planazo
         private static void CancelarReserva(GestorReservas gestor)
         {
             EscribirTitulo("--- CANCELAR UNA RESERVA ---");
+            var reservas = gestor.ObtenerReservas();
+            if (reservas.Count > 0)
+            {
+                Console.WriteLine("Reservas registradas actualmente:");
+                foreach (var r in reservas)
+                {
+                    Console.WriteLine($"  [ID Reserva #{r.IdReserva}] Estado: {r.Estado.ToString().ToUpper()} | Cliente: {r.NombrePersona} | Evento: {r.EventoReservado.Nombre} ({r.CantidadEntradas} entradas)");
+                }
+                Console.WriteLine();
+            }
+
             Console.Write("Ingrese el ID de la reserva a cancelar: ");
             if (!int.TryParse(Console.ReadLine(), out int idReserva))
                 throw new FormatException("El ID de la reserva debe ser un número entero válido.");
